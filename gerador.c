@@ -44,13 +44,38 @@ void shuffle_readings(Reading *readings, int n) {
     }
 }
 
+int is_valid_type(const char *type) {
+    return strcmp(type, "CONJ_Z") == 0 || strcmp(type, "CONJ_Q") == 0 || strcmp(type, "TEXTO") == 0 || strcmp(type, "BINARIO") == 0;
+}
+
+int is_valid_date(int dia, int mes, int ano, int hora, int min, int seg) {
+    if (ano < 1970 || mes < 1 || mes > 12 || dia < 1 || dia > 31 || hora < 0 || hora > 23 || min < 0 || min > 59 || seg < 0 || seg > 59) return 0;
+    return 1;
+}
+
 int main(int argc, char *argv[]) {
     srand(time(NULL) ^ (int)getpid());
     
-    if (argc < 7 || (argc - 5) % 2 != 0) {
-        printf("Uso: %s <inicio_dia> <inicio_mes> <inicio_ano> <inicio_hora> <inicio_min> <inicio_seg> "
-               "<fim_dia> <fim_mes> <fim_ano> <fim_hora> <fim_min> <fim_seg> "
-               "<sensor1> <tipo1> [<sensor2> <tipo2> ...]\n", argv[0]);
+    if (argc < 19 || (argc - 13) % 2 != 0) {
+        printf("Uso: %s <inicio_dia> <inicio_mes> <inicio_ano> <inicio_hora> <inicio_min> <inicio_seg> <fim_dia> <fim_mes> <fim_ano> <fim_hora> <fim_min> <fim_seg> <sensor1> <tipo1> [<sensor2> <tipo2> ...]\n", argv[0]);
+        return 1;
+    }
+
+    int inicio_dia = atoi(argv[1]);
+    int inicio_mes = atoi(argv[2]);
+    int inicio_ano = atoi(argv[3]);
+    int inicio_hora = atoi(argv[4]);
+    int inicio_min = atoi(argv[5]);
+    int inicio_seg = atoi(argv[6]);
+    int fim_dia = atoi(argv[7]);
+    int fim_mes = atoi(argv[8]);
+    int fim_ano = atoi(argv[9]);
+    int fim_hora = atoi(argv[10]);
+    int fim_min = atoi(argv[11]);
+    int fim_seg = atoi(argv[12]);
+    if (!is_valid_date(inicio_dia, inicio_mes, inicio_ano, inicio_hora, inicio_min, inicio_seg) ||
+        !is_valid_date(fim_dia, fim_mes, fim_ano, fim_hora, fim_min, fim_seg)) {
+        printf("Data e/ou hora fora do intervalo válido.\n");
         return 1;
     }
 
@@ -91,6 +116,11 @@ int main(int argc, char *argv[]) {
     for (int i = 13; i < argc; i += 2) {
         char *sensor_id = argv[i];
         char *data_type = argv[i + 1];
+        if (!is_valid_type(data_type)) {
+            printf("Tipo de dado inválido para o sensor %s: %s. Tipos válidos: CONJ_Z, CONJ_Q, TEXTO, BINARIO.\n", sensor_id, data_type);
+            free(readings);
+            return 1;
+        }
 
         for (int j = 0; j < READINGS_PER_SENSOR; j++) {
             readings[reading_index].timestamp = start_timestamp + 

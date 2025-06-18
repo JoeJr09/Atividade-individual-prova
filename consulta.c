@@ -15,22 +15,20 @@ typedef struct {
 SensorReading* binary_search(SensorReading* readings, int left, int right, time_t target) {
     while (left <= right) {
         int mid = left + (right - left) / 2;
-        
         if (readings[mid].timestamp == target)
             return &readings[mid];
-            
-        if (readings[mid].timestamp > target)
+        if (readings[mid].timestamp < target)
             left = mid + 1;
         else
             right = mid - 1;
     }
-    
+    // Após o loop, left é o menor timestamp maior que target, right é o maior menor que target
+    if (left >= right && right >= 0) return &readings[right];
+    if (left < 0) return &readings[0];
     if (right < 0) return &readings[0];
     if (left >= right) return &readings[right];
-    
     time_t diff_left = abs(readings[left].timestamp - target);
     time_t diff_right = abs(readings[right].timestamp - target);
-    
     return (diff_left < diff_right) ? &readings[left] : &readings[right];
 }
 
@@ -41,7 +39,12 @@ int main(int argc, char *argv[]) {
     }
 
     char *sensor_id = argv[1];
-    time_t target_timestamp = atol(argv[2]);
+    char *endptr;
+    time_t target_timestamp = strtol(argv[2], &endptr, 10);
+    if (*endptr != '\0' || target_timestamp < 0) {
+        printf("Timestamp inválido informado.\n");
+        return 1;
+    }
 
     char filename[MAX_SENSOR_ID + 5];
     snprintf(filename, sizeof(filename), "%s.txt", sensor_id);
@@ -67,15 +70,24 @@ int main(int argc, char *argv[]) {
     }
 
     int i = 0;
+    int line_number = 1;
+    int invalid_lines = 0;
     while (fgets(line, sizeof(line), sensor_file)) {
         char value[MAX_LINE_LENGTH];
         if (sscanf(line, "%ld %s %s", &readings[i].timestamp, readings[i].sensor_id, value) == 3) {
             strncpy(readings[i].value, value, MAX_LINE_LENGTH - 1);
             readings[i].value[MAX_LINE_LENGTH - 1] = '\0';
             i++;
+        } else {
+            printf("Linha inválida no arquivo do sensor (linha %d): %s", line_number, line);
+            invalid_lines++;
         }
+        line_number++;
     }
     fclose(sensor_file);
+    if (invalid_lines > 0) {
+        printf("Total de linhas inválidas: %d\n", invalid_lines);
+    }
 
     SensorReading *result = binary_search(readings, 0, total_readings - 1, target_timestamp);
     

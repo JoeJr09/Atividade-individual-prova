@@ -15,7 +15,7 @@ typedef struct {
 int compare_timestamps(const void *a, const void *b) {
     const SensorReading *reading_a = (const SensorReading *)a;
     const SensorReading *reading_b = (const SensorReading *)b;
-    return (reading_b->timestamp - reading_a->timestamp);
+    return (reading_a->timestamp - reading_b->timestamp);
 }
 
 int main(int argc, char *argv[]) {
@@ -45,6 +45,8 @@ int main(int argc, char *argv[]) {
     }
 
     int i = 0;
+    int line_number = 1;
+    int invalid_lines = 0;
     while (fgets(line, sizeof(line), input_file)) {
         char sensor_id[MAX_SENSOR_ID];
         char value[MAX_LINE_LENGTH];
@@ -57,9 +59,16 @@ int main(int argc, char *argv[]) {
             strncpy(readings[i].value, value, MAX_LINE_LENGTH - 1);
             readings[i].value[MAX_LINE_LENGTH - 1] = '\0';
             i++;
+        } else {
+            printf("Linha inválida no arquivo de entrada (linha %d): %s", line_number, line);
+            invalid_lines++;
         }
+        line_number++;
     }
     fclose(input_file);
+    if (invalid_lines > 0) {
+        printf("Total de linhas inválidas: %d\n", invalid_lines);
+    }
 
     qsort(readings, total_readings, sizeof(SensorReading), compare_timestamps);
 
